@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Huisboekje</title>
+<meta name="theme-color" content="#1d6a4e">
+<meta name="description" content="Huishoudboekje: snel uitgaven ingeven op gsm en laptop">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-column ledger app, bottom tab bar + big add button; wider screens get a centered 720px column */
+:root{
+  --bg:#eef2ee; --surface:#ffffff; --surface-2:#f6f8f5; --ink:#16211c; --muted:#5b6a62; --line:#d7e0da;
+  --accent:#1d6a4e; --accent-ink:#ffffff; --accent-soft:#dbeae2;
+  --warn:#9a5c00; --warn-soft:#fbeed6; --bad:#b0281f; --bad-soft:#f8dedb;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1412; --surface:#171f1c; --surface-2:#1d2622; --ink:#e4ece7; --muted:#93a39a; --line:#2b3632;
+  --accent:#5fc49a; --accent-ink:#06130d; --accent-soft:#1c3328;
+  --warn:#e6a93f; --warn-soft:#352813; --bad:#f2786b; --bad-soft:#3a1d1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --surface:#171f1c; --surface-2:#1d2622; --ink:#e4ece7; --muted:#93a39a; --line:#2b3632;
+  --accent:#5fc49a; --accent-ink:#06130d; --accent-soft:#1c3328;
+  --warn:#e6a93f; --warn-soft:#352813; --bad:#f2786b; --bad-soft:#3a1d1a; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+html{padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+body{color:var(--ink);font:15px/1.45 var(--body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:12px 120px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:6px 14px}
+.brand{font-family:var(--display);font-weight:700;font-size:20px}
+.brand small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted)}
+.store-pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+
+/* summary */
+.hero{display:grid;gap:4px;padding-block:6px 18px}
+.hero .big{font-family:var(--display);font-weight:700;font-size:clamp(34px,9vw,46px);line-height:1.05}
+.hero-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.stat{display:flex;gap:6px;align-items:baseline;padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-size:13px}
+.stat b{font-weight:700}
+.stat.due b{color:var(--bad)}
+
+section{margin-top:22px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.sec-head h2{font-size:18px}
+.link{background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:4px}
+
+/* rows */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.list>.row:first-child,.list>.rowwrap:first-child>.row{border-top:0}
+.row:hover{background:var(--surface-2)}
+.dot{width:10px;height:10px;border-radius:50%}
+.row .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .s{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .a{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.row .a small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.chip-due{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:99px;margin-right:6px}
+.chip-due.late{background:var(--bad-soft);color:var(--bad)}
+.chip-due.soon{background:var(--warn-soft);color:var(--warn)}
+.chip-due.ok{background:var(--accent-soft);color:var(--accent)}
+.payline{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px 36px}
+.payline[hidden]{display:none}
+.paybtn{border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.paybtn:hover{background:var(--accent-soft)}
+.btn-pay{border:0;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}
+.empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:14px}
+.month-head{display:flex;justify-content:space-between;padding:14px 4px 6px;font-weight:600;font-size:13px;color:var(--muted)}
+
+.banner{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink);font-size:14px;margin-bottom:6px}
+.banner button{border:1px solid currentColor;background:transparent;border-radius:99px;padding:5px 12px;font-weight:600;font-size:13px;cursor:pointer;color:var(--warn)}
+
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 76px 1fr 1fr;align-items:end}
+.nav button{background:none;border:0;padding:10px 4px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;display:grid;justify-items:center;gap:3px}
+.nav button svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--accent)}
+.fab{justify-self:center;width:62px;height:62px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;transform:translateY(-14px);box-shadow:0 6px 18px rgba(20,60,45,.28);cursor:pointer}
+.fab svg{width:30px;height:30px}
+
+/* sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(10,20,16,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:100%;overflow:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.sheet-bg{align-items:center;padding:24px}.sheet{border-radius:20px;max-height:92vh}}
+.sheet-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet-top h2{font-size:20px}
+.x{background:var(--surface);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;line-height:1}
+.field{display:grid;gap:6px;margin-top:14px}
+.field>label,.field>.label{font-size:13px;font-weight:600;color:var(--muted)}
+.in{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.in:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.amount-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 14px}
+.amount-wrap:focus-within{outline:2px solid var(--accent)}
+.amount-wrap span{font-family:var(--display);font-size:30px;color:var(--muted)}
+#f-bedrag{border:0;background:transparent;font-family:var(--display);font-weight:700;font-size:34px;width:100%;padding:4px 0;outline:none;font-variant-numeric:tabular-nums;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 12px;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip .dot{width:8px;height:8px}
+.chip[aria-pressed="true"] .dot{background:var(--accent-ink)!important}
+.quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.quick .chip{white-space:nowrap;background:var(--surface-2)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;padding:9px;border-radius:9px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two .field{margin-top:0}
+details.more{margin-top:16px;border-top:1px solid var(--line);padding-top:8px}
+details.more summary{cursor:pointer;font-weight:600;color:var(--accent);padding:6px 0}
+.with-btn{display:flex;gap:6px}
+.with-btn .in{flex:1}
+.small-btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:0 12px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.hint{font-size:12px;color:var(--muted)}
+.hint.bad{color:var(--bad)}
+.actions{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));background:var(--bg);display:flex;gap:10px;margin-top:20px;padding-block:12px calc(4px + env(safe-area-inset-bottom,0px))}
+.primary{flex:1;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;border-radius:14px;padding:14px;cursor:pointer}
+.primary:disabled{opacity:.6}
+.danger{border:1px solid var(--bad);color:var(--bad);background:transparent;border-radius:14px;padding:0 16px;font-weight:600;cursor:pointer}
+
+/* report */
+.period{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.period h1{font-size:22px}
+.arrow{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:14px}
+.bar .track{grid-column:1/-1;height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar .fill{height:100%;border-radius:99px}
+.bar .v{font-weight:700;font-variant-numeric:tabular-nums}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:140px;padding-top:8px}
+.mcol{display:grid;grid-template-rows:1fr auto;height:100%;gap:4px;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;background:none;border:0;padding:0}
+.mcol .b{align-self:end;background:var(--accent);border-radius:5px 5px 2px 2px;min-height:2px;opacity:.85}
+.mcol.cur .b{opacity:1;outline:2px solid var(--ink);outline-offset:1px}
+.grid2{display:grid;gap:12px}
+@media (min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.filters .in{flex:1 1 200px;width:auto}
+textarea.in{min-height:150px;resize:vertical;line-height:1.5}
+.settings .card{display:grid;gap:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+
+.login{max-width:420px;margin:12vh auto 0;display:grid;gap:12px;padding:22px}
+body.no-nav .nav{display:none}
+.store-pill{cursor:pointer}
+.store-pill.ok{color:var(--accent);border-color:var(--accent-soft)}
+.store-pill.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+.store-pill.bad{color:var(--bad);background:var(--bad-soft);border-color:transparent}
+</style>
+
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<nav class="nav" aria-label="Hoofdmenu"><div class="nav-in">
+  <button data-nav="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Start</button>
+  <button data-nav="lijst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Lijst</button>
+  <button class="fab" data-act="new" aria-label="Nieuwe uitgave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button data-nav="rapport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Overzicht</button>
+  <button data-nav="instellingen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Instellingen</button>
+</div></nav>
+
+<div class="sheet-bg" id="sheet" hidden>
+  <form class="sheet" id="form" autocomplete="off" novalidate>
+    <div class="sheet-top"><h2 id="f-title">Nieuwe uitgave</h2><button type="button" class="x" data-act="close" aria-label="Sluiten">×</button></div>
+    <div class="field" id="quick-field"><span class="label">Snel opnieuw</span><div class="quick" id="quick"></div></div>
+
+    <div class="field"><label for="f-bedrag">Bedrag</label>
+      <div class="amount-wrap"><span>€</span><input id="f-bedrag" inputmode="decimal" placeholder="0,00" enterkeyhint="done"></div></div>
+
+    <div class="field"><label for="f-oms">Waar of wat</label>
+      <input class="in" id="f-oms" list="dl-oms" placeholder="bv. Colruyt, Luminus, pretpark"><datalist id="dl-oms"></datalist></div>
+
+    <div class="field"><span class="label">Categorie</span><div class="chips" id="c-cat"></div></div>
+
+    <div class="field"><span class="label">Status</span>
+      <div class="seg" id="seg-status"><button type="button" data-status="betaald">Betaald</button><button type="button" data-status="te_betalen">Nog te betalen</button></div></div>
+
+    <div class="field"><span class="label" id="lbl-met">Betaald met</span><div class="chips" id="c-met"></div></div>
+
+    <div class="two" style="margin-top:14px">
+      <div class="field"><label for="f-datum">Datum</label><input class="in" type="date" id="f-datum"></div>
+      <div class="field" id="due-field"><label for="f-verval">Vervaldatum</label><input class="in" type="date" id="f-verval"></div>
+    </div>
+
+    <details class="more" id="more">
+      <summary>Meer details</summary>
+      <div class="two" style="margin-top:10px">
+        <div class="field"><label for="f-herh">Komt terug</label>
+          <select class="in" id="f-herh"><option value="geen">Eenmalig</option><option value="maand">Elke maand</option><option value="kwartaal">Elk kwartaal</option><option value="jaar">Elk jaar</option></select></div>
+        <div class="field"><label for="f-tags">Tags</label><input class="in" id="f-tags" placeholder="bv. Ardennen 2026"></div>
+      </div>
+      <div class="field"><span class="label">Wie betaalde</span><div class="chips" id="c-wie"></div></div>
+      <div class="field"><label for="f-iban">Rekeningnummer (IBAN)</label>
+        <div class="with-btn"><input class="in" id="f-iban" placeholder="BE00 0000 0000 0000"><button type="button" class="small-btn" data-copy="f-iban">Kopieer</button></div></div>
+      <div class="field"><label for="f-med">Mededeling</label>
+        <div class="with-btn"><input class="in" id="f-med" placeholder="+++000/0000/00000+++"><button type="button" class="small-btn" data-copy="f-med">Kopieer</button></div>
+        <span class="hint" id="med-hint"></span></div>
+      <div class="field"><label for="f-notitie">Notitie</label><input class="in" id="f-notitie" placeholder="bv. garantie tot 2028"></div>
+    </details>
+
+    <div class="actions">
+      <button type="button" class="danger" data-act="delete" id="btn-del" hidden>Verwijder</button>
+      <button type="submit" class="primary" id="btn-save">Opslaan</button>
+    </div>
+  </form>
+</div>
+
+
+<script src="config.js"></script>
+<script src="firebase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

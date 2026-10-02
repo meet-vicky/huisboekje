@@ -1,0 +1,20 @@
+rules_version = '2';
+// Plak dit in Firebase console > Firestore Database > Rules en klik op Publish.
+// Alleen deze twee e-mailadressen hebben toegang.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function gezin() {
+      return request.auth != null
+        && request.auth.token.email in ['tomenvicky@gmail.com', 'veystom89@gmail.com'];
+    }
+    match /uitgaven/{id} {
+      allow read, delete: if gezin();
+      allow create, update: if gezin()
+        && request.resource.data.bedrag is number
+        && request.resource.data.status in ['betaald', 'te_betalen'];
+    }
+    match /instellingen/{id} {
+      allow read, write: if gezin();
+    }
+  }
+}
